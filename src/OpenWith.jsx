@@ -8,7 +8,7 @@ export default function OpenWith({ source }) {
   return (
     <React.Fragment>
       {viewers.map((viewer) => (
-        <a target="_blank" href={viewer.href + source}>
+        <a key={viewer.name} target="_blank" href={viewer.href + source} title={"Open with " + viewer.name}>
           <img className="viewer_icon" src={viewer.logo} />
         </a>
       ))}

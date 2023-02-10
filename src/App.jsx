@@ -17,11 +17,7 @@ export default function App() {
         <tr>
           <th>Version</th>
           <th>s3 URL</th>
-          <th>sizeX</th>
-          <th>sizeY</th>
-          <th>sizeZ</th>
-          <th>sizeC</th>
-          <th>sizeT</th>
+          <th>shape, chunks</th>
           <th>Axes</th>
           <th>Wells</th>
           <th>Fields</th>

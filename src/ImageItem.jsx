@@ -48,6 +48,8 @@ export default function ImageItem({ source }) {
       let layerData = await loadOmeroMultiscales(config, node, attrs);
 
       let shape = layerData.loader[0]._data.meta.shape;
+      let chunks = layerData.loader[0]._data.meta.chunks;
+      console.log("layerData.loader[0]._data.meta", layerData.loader[0]._data.meta, chunks, chunks.join(","))
 
       let selections = [];
       layerData.channelsVisible.forEach((visible, chIndex) => {
@@ -62,17 +64,17 @@ export default function ImageItem({ source }) {
           );
         }
       });
-      const dims = {};
-      axes.forEach((axis, dim) => (dims[axis.name] = shape[dim]));
+
       layerData.selections = selections;
 
       setLayers([layerData]);
       setImageInfo({
-        dims: dims,
         axes: axes.map((axis) => axis.name).join(""),
         version: attrs.multiscales?.[0]?.version,
         keywords,
         wells,
+        shape,
+        chunks,
         fields
       });
     };
@@ -85,10 +87,6 @@ export default function ImageItem({ source }) {
     height: 100,
     position: "relative",
   };
-
-  let sizes = ["x", "y", "z", "c", "t"].map((dim) => (
-    <td key={dim}>{imgInfo?.dims?.[dim]}</td>
-  ));
 
   let link_style = {
     maxWidth: 150,
@@ -107,7 +105,10 @@ export default function ImageItem({ source }) {
         <CopyButton source={source} />
         <OpenWith source={source} />
       </td>
-      {sizes}
+      <td>
+        {imgInfo?.shape?.join(", ")}<br/>
+        {imgInfo?.chunks?.join(", ")}
+      </td>
       <td>{imgInfo.axes}</td>
       <td>{imgInfo.wells}</td>
       <td>{imgInfo.fields}</td>
