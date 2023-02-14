@@ -1,15 +1,17 @@
 import React from "react";
 
+import Thumbnail from "./Thumbnail";
 import Viewer from "./Viewer";
 import OpenWith from "./OpenWith";
 import CopyButton from "./CopyButton";
 import { loadOmeroMultiscales, open, getNgffAxes } from "./util";
+import { openArray } from "zarr";
 
 // DeckGL react component
 export default function ImageItem({ source }) {
   let config = { source };
 
-  const [layers, setLayers] = React.useState([]);
+  // const [layers, setLayers] = React.useState([]);
 
   const [imgInfo, setImageInfo] = React.useState({});
 
@@ -45,30 +47,37 @@ export default function ImageItem({ source }) {
 
       const axes = getNgffAxes(attrs.multiscales);
 
-      let layerData = await loadOmeroMultiscales(config, node, attrs);
+      let path = attrs.multiscales[0].datasets[0].path;
+      const store = await openArray({ store: source + "/" + path, mode: "r" });
 
-      let shape = layerData.loader[0]._data.meta.shape;
-      let chunks = layerData.loader[0]._data.meta.chunks;
-      console.log("layerData.loader[0]._data.meta", layerData.loader[0]._data.meta, chunks, chunks.join(","))
+      let shape = store.meta.shape;
+      let chunks = store.meta.chunks;
 
-      let selections = [];
-      layerData.channelsVisible.forEach((visible, chIndex) => {
-        if (visible) {
-          selections.push(
-            axes.map((axis, dim) => {
-              if (axis.type == "time") return 0;
-              if (axis.name == "z") return parseInt(shape[dim] / 2);
-              if (axis.name == "c") return chIndex;
-              return 0;
-            })
-          );
-        }
-      });
+      // let layerData = await loadOmeroMultiscales(config, node, attrs);
+      // let shape = ["TBD"]  // layerData.loader[0]._data.meta.shape;
+      // let chunks = ["TBD"] // layerData.loader[0]._data.meta.chunks;
+      // console.log("layerData.loader[0]._data.meta", layerData.loader[0]._data.meta, chunks, chunks.join(","))
 
-      layerData.selections = selections;
+      // let selections = [];
+      // layerData.channelsVisible.forEach((visible, chIndex) => {
+      //   if (visible) {
+      //     selections.push(
+      //       axes.map((axis, dim) => {
+      //         if (axis.type == "time") return 0;
+      //         if (axis.name == "z") return parseInt(shape[dim] / 2);
+      //         if (axis.name == "c") return chIndex;
+      //         return 0;
+      //       })
+      //     );
+      //   }
+      // });
 
-      setLayers([layerData]);
+      // layerData.selections = selections;
+
+      // setLayers([layerData]);
+
       setImageInfo({
+        attrs,
         axes: axes.map((axis) => axis.name).join(""),
         version: attrs.multiscales?.[0]?.version,
         keywords,
@@ -115,7 +124,9 @@ export default function ImageItem({ source }) {
       <td>{imgInfo?.keywords?.join(", ")}</td>
       <td>
         <div style={wrapperStyle}>
-          <Viewer layersData={layers} />
+        {imgInfo.attrs &&
+          <Thumbnail source={source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
+        }
         </div>
       </td>
     </tr>
