@@ -2,8 +2,6 @@ import React from "react";
 
 import Thumbnail from "./Thumbnail";
 // import Viewer from "./Viewer";
-import OpenWith from "./OpenWith";
-import CopyButton from "./CopyButton";
 import { loadOmeroMultiscales, open, getNgffAxes } from "./util";
 import { openArray } from "zarr";
 
@@ -78,15 +76,14 @@ export default function ImageItem({ source, zarr_columns }) {
 
       // setLayers([layerData]);
 
-      // ["URL", "Version", "Axes", "shape, chunks", "Wells", "Fields", "Keywords", "Thumbnail"];
       setImageInfo({
         attrs,
         "Axes": axes.map((axis) => axis.name).join(""),
         "Version": attrs.multiscales?.[0]?.version,
         "Keywords": keywords,
         "Wells": wells,
-        "shape": shape.join(", "),
-        "chunks": chunks.join(", "),
+        "shape": "(" + shape.join(", ") + ")",
+        "chunks": "(" + chunks.join(", ") + ")",
         "Fields": fields,
         // use this source for <Thumbnail> to handle plate -> Image update
         source
@@ -102,34 +99,14 @@ export default function ImageItem({ source, zarr_columns }) {
     position: "relative",
   };
 
-  let link_style = {
-    maxWidth: 150,
-    display: "block",
-    textOverflow: "ellipsis",
-    direction: "rtl",
-    whiteSpace: "nowrap",
-    overflow: "hidden"
-  }
-
-  // ["URL", "Version", "Axes", "shape, chunks", "Wells", "Fields", "Keywords", "Thumbnail"];
-  
   function renderColumn(col_name) {
-    if (col_name == "URL") {
-      return (<React.Fragment>
-        <a title={source} style={link_style} href={source}>{source}</a>
-        <CopyButton source={source} />
-        <OpenWith source={source} />
-        </React.Fragment>
-      )
-    } else if (col_name == "Thumbnail") {
+    if (col_name == "Thumbnail") {
       return (
       <div style={wrapperStyle}>
       {imgInfo.attrs &&
         <Thumbnail source={imgInfo.source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
       }
       </div>)
-    } else if (col_name == "shape, chunks") {
-      return <React.Fragment>({imgInfo.shape})<br />({imgInfo.chunks})</React.Fragment>
     } else { 
       return imgInfo[col_name];
     }
