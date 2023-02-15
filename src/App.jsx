@@ -1,30 +1,68 @@
-/// app.js
+
 import React from "react";
+
+import Papa from "papaparse";
 
 import ImageItem from "./ImageItem";
 
-import zarr_samples_json from "../public/zarr_samples.json";
-
-// DeckGL react component
 export default function App() {
-  let sources = zarr_samples_json.urls;
 
-  let items = sources.map((source) => <ImageItem key={source} source={source}/>);
+  const [tableData, setTableData] = React.useState([]);
+
+  React.useEffect(() => {
+    Papa.parse("/zarr_samples.csv", {
+      header: true,
+      download: true,
+      complete: function (results) {
+        console.log(results);
+        setTableData(results.data);
+      },
+    });
+  }, []);
+
+  let zarr_columns = [
+    "URL",
+    "Version",
+    "Axes",
+    "shape, chunks",
+    "Wells",
+    "Fields",
+    "Keywords",
+    "Thumbnail",
+  ];
+
+  let custom_columns = ["License", "Study", "DOI", "Date added"];
+
+  function renderRow(rowdata) {
+    return <React.Fragment>
+      {custom_columns.map((col_name) => <td key={col_name}>{rowdata[col_name]}</td>)}
+      </React.Fragment>
+  }
+
+  const table_rows = tableData.map((rowdata) => {
+    console.log("Row....", rowdata);
+    return (<tr key={rowdata["URL"]}>
+        {renderRow(rowdata)}
+        <ImageItem
+          source={rowdata["URL"]}
+          zarr_columns={zarr_columns}
+        />
+      </tr>
+    );
+  });
 
   return (
     <table>
       <tbody>
         <tr>
-          <th>Version</th>
-          <th>s3 URL</th>
-          <th>shape, chunks</th>
-          <th>Axes</th>
-          <th>Wells</th>
-          <th>Fields</th>
-          <th>Keywords</th>
-          <th>Thumbnail</th>
+          {custom_columns.map((name) => (
+            <th key={name}>{name}</th>
+          ))}
+          {zarr_columns.map((name) => (
+            <th key={name}>{name}</th>
+          ))}
         </tr>
-        {items}
+        {table_rows}
       </tbody>
     </table>
   );

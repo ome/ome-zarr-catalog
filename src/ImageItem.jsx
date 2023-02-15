@@ -8,7 +8,7 @@ import { loadOmeroMultiscales, open, getNgffAxes } from "./util";
 import { openArray } from "zarr";
 
 // DeckGL react component
-export default function ImageItem({ source }) {
+export default function ImageItem({ source, zarr_columns }) {
   let config = { source };
 
   // const [layers, setLayers] = React.useState([]);
@@ -76,15 +76,16 @@ export default function ImageItem({ source }) {
 
       // setLayers([layerData]);
 
+      // ["URL", "Version", "Axes", "shape, chunks", "Wells", "Fields", "Keywords", "Thumbnail"];
       setImageInfo({
         attrs,
-        axes: axes.map((axis) => axis.name).join(""),
-        version: attrs.multiscales?.[0]?.version,
-        keywords,
-        wells,
-        shape,
-        chunks,
-        fields
+        "Axes": axes.map((axis) => axis.name).join(""),
+        "Version": attrs.multiscales?.[0]?.version,
+        "Keywords": keywords,
+        "Wells": wells,
+        "shape": shape.join(", "),
+        "chunks": chunks.join(", "),
+        "Fields": fields
       });
     };
 
@@ -106,29 +107,33 @@ export default function ImageItem({ source }) {
     overflow: "hidden"
   }
 
-  return (
-    <tr>
-      <td>{imgInfo.version}</td>
-      <td>
+  // ["URL", "Version", "Axes", "shape, chunks", "Wells", "Fields", "Keywords", "Thumbnail"];
+  
+  function renderColumn(col_name) {
+    if (col_name == "URL") {
+      return (<React.Fragment>
         <a title={source} style={link_style} href={source}>{source}</a>
         <CopyButton source={source} />
         <OpenWith source={source} />
-      </td>
-      <td>
-        {imgInfo?.shape?.join(", ")}<br/>
-        {imgInfo?.chunks?.join(", ")}
-      </td>
-      <td>{imgInfo.axes}</td>
-      <td>{imgInfo.wells}</td>
-      <td>{imgInfo.fields}</td>
-      <td>{imgInfo?.keywords?.join(", ")}</td>
-      <td>
-        <div style={wrapperStyle}>
-        {imgInfo.attrs &&
-          <Thumbnail source={source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
-        }
-        </div>
-      </td>
-    </tr>
+        </React.Fragment>
+      )
+    } else if (col_name == "Thumbnail") {
+      return (
+      <div style={wrapperStyle}>
+      {imgInfo.attrs &&
+        <Thumbnail source={source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
+      }
+      </div>)
+    } else if (col_name == "shape, chunks") {
+      return <React.Fragment>({imgInfo.shape})<br />({imgInfo.chunks})</React.Fragment>
+    } else { 
+      return imgInfo[col_name];
+    }
+  }
+
+  return (
+    <React.Fragment>
+      {zarr_columns.map(col_name => <td key={"zarr-" + col_name}>{renderColumn(col_name)}</td>)}
+    </React.Fragment>
   );
 }
