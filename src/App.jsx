@@ -14,7 +14,6 @@ export default function App() {
       header: true,
       download: true,
       complete: function (results) {
-        console.log(results);
         setTableData(results.data);
       },
     });
@@ -39,8 +38,9 @@ export default function App() {
       </React.Fragment>
   }
 
-  const table_rows = tableData.map((rowdata) => {
-    console.log("Row....", rowdata);
+  const validRows = tableData.filter(rowdata => rowdata.URL?.length > 0);
+
+  const table_rows = validRows.map((rowdata) => {
     return (<tr key={rowdata["URL"]}>
         {renderRow(rowdata)}
         <ImageItem

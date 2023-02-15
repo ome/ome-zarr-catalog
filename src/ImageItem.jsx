@@ -1,7 +1,7 @@
 import React from "react";
 
 import Thumbnail from "./Thumbnail";
-import Viewer from "./Viewer";
+// import Viewer from "./Viewer";
 import OpenWith from "./OpenWith";
 import CopyButton from "./CopyButton";
 import { loadOmeroMultiscales, open, getNgffAxes } from "./util";
@@ -9,7 +9,10 @@ import { openArray } from "zarr";
 
 // DeckGL react component
 export default function ImageItem({ source, zarr_columns }) {
-  let config = { source };
+
+  if (source.endsWith("/")) {
+    source = source.slice(0, -1);
+  }
 
   // const [layers, setLayers] = React.useState([]);
 
@@ -17,9 +20,8 @@ export default function ImageItem({ source, zarr_columns }) {
 
   React.useEffect(() => {
     const fn = async function () {
-      let node = await open(config.source);
+      let node = await open(source);
       let attrs = await node.attrs.asObject();
-      console.log("attrs", attrs);
 
       let keywords = [];
       let wells;
@@ -39,17 +41,17 @@ export default function ImageItem({ source, zarr_columns }) {
       }
       if (redirectSource) {
         // reload with new source
-        config = {source: redirectSource}
-        node = await open(config.source);
+        source = redirectSource
+        node = await open(source);
         attrs = await node.attrs.asObject();
         keywords.push("bioformats2raw.layout");
       }
 
       const axes = getNgffAxes(attrs.multiscales);
 
+      // load first dataset (highest resolution image) to get shape, chunks
       let path = attrs.multiscales[0].datasets[0].path;
       const store = await openArray({ store: source + "/" + path, mode: "r" });
-
       let shape = store.meta.shape;
       let chunks = store.meta.chunks;
 
@@ -85,7 +87,9 @@ export default function ImageItem({ source, zarr_columns }) {
         "Wells": wells,
         "shape": shape.join(", "),
         "chunks": chunks.join(", "),
-        "Fields": fields
+        "Fields": fields,
+        // use this source for <Thumbnail> to handle plate -> Image update
+        source
       });
     };
 
@@ -121,7 +125,7 @@ export default function ImageItem({ source, zarr_columns }) {
       return (
       <div style={wrapperStyle}>
       {imgInfo.attrs &&
-        <Thumbnail source={source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
+        <Thumbnail source={imgInfo.source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
       }
       </div>)
     } else if (col_name == "shape, chunks") {
