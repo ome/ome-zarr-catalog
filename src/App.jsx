@@ -10,7 +10,15 @@ export default function App() {
   const [tableData, setTableData] = React.useState([]);
 
   React.useEffect(() => {
-    Papa.parse("/zarr_samples.csv", {
+
+    const params = new URLSearchParams(location.search);
+    let csvUrl = params.get("csv");
+    try {
+      new URL(csvUrl);
+    } catch (error) {
+      csvUrl = "/zarr_samples.csv";
+    }
+    Papa.parse(csvUrl, {
       header: true,
       download: true,
       complete: function (results) {
