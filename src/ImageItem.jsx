@@ -7,7 +7,6 @@ import { openArray } from "zarr";
 
 // DeckGL react component
 export default function ImageItem({ source, zarr_columns }) {
-
   if (source.endsWith("/")) {
     source = source.slice(0, -1);
   }
@@ -31,18 +30,31 @@ export default function ImageItem({ source, zarr_columns }) {
         fields = attrs.plate.field_count;
         wells = attrs.plate.wells.length;
         let wellPath = source + "/" + attrs.plate.wells[0].path;
-        let wellJson = await fetch(wellPath + "/.zattrs").then(rsp => rsp.json());
+        let wellJson = await fetch(wellPath + "/.zattrs").then((rsp) =>
+          rsp.json()
+        );
         redirectSource = wellPath + "/" + wellJson.well.images[0].path;
-      } else if (attrs['bioformats2raw.layout']) {
+        keywords.push("plate");
+      } else if (attrs["bioformats2raw.layout"]) {
         // Use the first image at /0
         redirectSource = source + "/0";
       }
       if (redirectSource) {
         // reload with new source
-        source = redirectSource
+        source = redirectSource;
         node = await open(source);
         attrs = await node.attrs.asObject();
         keywords.push("bioformats2raw.layout");
+      }
+
+      // If we are showing Keywords, check for labels under image...
+      if (zarr_columns.includes("Keywords")) {
+        try {
+          let labelsJson = await fetch(source + "/labels/.zattrs").then((rsp) =>
+            rsp.json()
+          );
+          keywords.push(`labels (${labelsJson.labels.join(", ")})`);
+        } catch (err) {}
       }
 
       const axes = getNgffAxes(attrs.multiscales);
@@ -78,15 +90,15 @@ export default function ImageItem({ source, zarr_columns }) {
 
       setImageInfo({
         attrs,
-        "Axes": axes.map((axis) => axis.name).join(""),
-        "Version": attrs.multiscales?.[0]?.version,
-        "Keywords": keywords,
-        "Wells": wells,
-        "shape": "(" + shape.join(", ") + ")",
-        "chunks": "(" + chunks.join(", ") + ")",
-        "Fields": fields,
+        Axes: axes.map((axis) => axis.name).join(""),
+        Version: attrs.multiscales?.[0]?.version,
+        Keywords: keywords.join(", "),
+        Wells: wells,
+        shape: "(" + shape.join(", ") + ")",
+        chunks: "(" + chunks.join(", ") + ")",
+        Fields: fields,
         // use this source for <Thumbnail> to handle plate -> Image update
-        source
+        source,
       });
     };
 
@@ -102,19 +114,26 @@ export default function ImageItem({ source, zarr_columns }) {
   function renderColumn(col_name) {
     if (col_name == "Thumbnail") {
       return (
-      <div style={wrapperStyle}>
-      {imgInfo.attrs &&
-        <Thumbnail source={imgInfo.source} axes={imgInfo.axes} attrs={imgInfo.attrs} />
-      }
-      </div>)
-    } else { 
+        <div style={wrapperStyle}>
+          {imgInfo.attrs && (
+            <Thumbnail
+              source={imgInfo.source}
+              axes={imgInfo.axes}
+              attrs={imgInfo.attrs}
+            />
+          )}
+        </div>
+      );
+    } else {
       return imgInfo[col_name];
     }
   }
 
   return (
     <React.Fragment>
-      {zarr_columns.map(col_name => <td key={"zarr-" + col_name}>{renderColumn(col_name)}</td>)}
+      {zarr_columns.map((col_name) => (
+        <td key={"zarr-" + col_name}>{renderColumn(col_name)}</td>
+      ))}
     </React.Fragment>
   );
 }
