@@ -3,8 +3,7 @@ import React from "react";
 
 import Papa from "papaparse";
 
-import ImageItem from "./ImageItem";
-import ZarrUrl from "./ZarrUrl";
+import CatelogTable from "./CatelogTable";
 
 const supportedColumns = [
   "Version",
@@ -26,29 +25,28 @@ export default function App() {
   const [tableData, setTableData] = React.useState([]);
   const [tableColumns, setTableColumns] = React.useState([]);
 
-
   // check for ?csv=url
   const params = new URLSearchParams(location.search);
   let csvUrl = params.get("csv");
-  // columns=Version,Axes,shape,chunks,Wells,Fields,Keywords,Thumbnail,
+  // columns=Version,Thumbnail etc from supportedColumns
   let cols = params.get("columns");
-  console.log("cols", cols);
-  let zarr_columns = [];
+  let zarrColumns = [];
   if (cols) {
-    zarr_columns = cols.split(",").filter(col => supportedColumns.includes(col));
+    zarrColumns = cols.split(",").filter(col => supportedColumns.includes(col));
   } else {
-    zarr_columns = defaultColumns;
+    zarrColumns = defaultColumns;
   }
-  console.log("zarr_columsn", zarr_columns)
   try {
     new URL(csvUrl);
   } catch (error) {
+    // If no valid URL provided, use default
     csvUrl = "/zarr_samples.csv";
   }
 
 
   React.useEffect(() => {
 
+    // load csv and use this for the left side of the table...
     Papa.parse(csvUrl, {
       header: true,
       download: true,
@@ -59,46 +57,5 @@ export default function App() {
     });
   }, []);
 
-
-  function renderRow(rowdata) {
-    return <React.Fragment>
-      {tableColumns.map((col_name) => {
-        if (col_name == "URL") {
-          return <td key={col_name}><ZarrUrl source={rowdata[col_name]} /></td>
-        } else {
-          return <td key={col_name}>{rowdata[col_name]}</td>
-        }
-  })}
-      </React.Fragment>
-  }
-
-  const validRows = tableData.filter(rowdata => rowdata.URL?.length > 0);
-
-  const table_rows = validRows.map((rowdata) => {
-    // Each row is a combination of custom table data and NGFF Image data
-    return (<tr key={rowdata["URL"]}>
-        {renderRow(rowdata)}
-        <ImageItem
-          source={rowdata["URL"]}
-          zarr_columns={zarr_columns}
-        />
-      </tr>
-    );
-  });
-
-  return (
-    <table>
-      <tbody>
-        <tr>
-          {tableColumns.map((name) => (
-            <th key={name}>{name}</th>
-          ))}
-          {zarr_columns.map((name) => (
-            <th key={name}>{name}</th>
-          ))}
-        </tr>
-        {table_rows}
-      </tbody>
-    </table>
-  );
+  return <CatelogTable tableColumns={tableColumns} zarrColumns={zarrColumns} tableData={tableData} />
 }
