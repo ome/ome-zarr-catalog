@@ -88,13 +88,11 @@ export default function Thumbnail({ source, attrs }) {
   }, []);
 
   return (
-    <div>
       <canvas
         style={{ maxWidth: 100, maxHeight: 100 }}
         ref={canvas}
         height={canvasSize.height}
         width={canvasSize.width}
       />
-    </div>
   );
 }

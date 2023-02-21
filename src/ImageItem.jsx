@@ -108,7 +108,6 @@ export default function ImageItem({ source, zarr_columns }) {
   let wrapperStyle = {
     width: 150,
     height: 100,
-    position: "relative",
   };
 
   function renderColumn(col_name) {
