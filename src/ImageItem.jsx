@@ -1,8 +1,7 @@
 import React from "react";
 
 import Thumbnail from "./Thumbnail";
-// import Viewer from "./Viewer";
-import { loadOmeroMultiscales, open, getNgffAxes } from "./util";
+import { open, getNgffAxes } from "./util";
 import { openArray } from "zarr";
 
 // DeckGL react component
@@ -10,8 +9,6 @@ export default function ImageItem({ source, zarr_columns }) {
   if (source.endsWith("/")) {
     source = source.slice(0, -1);
   }
-
-  // const [layers, setLayers] = React.useState([]);
 
   const [imgInfo, setImageInfo] = React.useState({});
 
@@ -65,29 +62,6 @@ export default function ImageItem({ source, zarr_columns }) {
       let shape = store.meta.shape;
       let chunks = store.meta.chunks;
 
-      // let layerData = await loadOmeroMultiscales(config, node, attrs);
-      // let shape = ["TBD"]  // layerData.loader[0]._data.meta.shape;
-      // let chunks = ["TBD"] // layerData.loader[0]._data.meta.chunks;
-      // console.log("layerData.loader[0]._data.meta", layerData.loader[0]._data.meta, chunks, chunks.join(","))
-
-      // let selections = [];
-      // layerData.channelsVisible.forEach((visible, chIndex) => {
-      //   if (visible) {
-      //     selections.push(
-      //       axes.map((axis, dim) => {
-      //         if (axis.type == "time") return 0;
-      //         if (axis.name == "z") return parseInt(shape[dim] / 2);
-      //         if (axis.name == "c") return chIndex;
-      //         return 0;
-      //       })
-      //     );
-      //   }
-      // });
-
-      // layerData.selections = selections;
-
-      // setLayers([layerData]);
-
       setImageInfo({
         attrs,
         Axes: axes.map((axis) => axis.name).join(""),
@@ -124,7 +98,11 @@ export default function ImageItem({ source, zarr_columns }) {
         </div>
       );
     } else {
-      return imgInfo[col_name];
+      if (imgInfo[col_name] != undefined) {
+        return imgInfo[col_name];
+      } else {
+        return <span style={{"color": "#959595"}}>Loading...</span>
+      }
     }
   }
 
