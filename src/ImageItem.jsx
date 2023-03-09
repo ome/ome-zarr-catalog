@@ -18,8 +18,8 @@ export default function ImageItem({ source, zarr_columns }) {
       let attrs = await node.attrs.asObject();
 
       let keywords = [];
-      let wells;
-      let fields;
+      let wells = "";
+      let fields = "";
 
       // Check if we have a plate or bioformats2raw.layout...
       let redirectSource;
