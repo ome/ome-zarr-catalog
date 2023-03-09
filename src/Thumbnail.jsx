@@ -89,7 +89,7 @@ export default function Thumbnail({ source, attrs }) {
 
   return (
       <canvas
-        style={{ maxWidth: 100, maxHeight: 100 }}
+        style={{ maxWidth: 100, maxHeight: 100, backgroundColor: 'lightgrey' }}
         ref={canvas}
         height={canvasSize.height}
         width={canvasSize.width}
