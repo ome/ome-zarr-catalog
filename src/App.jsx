@@ -1,35 +1,61 @@
-/// app.js
+
 import React from "react";
 
-import ImageItem from "./ImageItem";
+import Papa from "papaparse";
 
-import zarr_samples_json from "../public/zarr_samples.json";
+import CatelogTable from "./CatelogTable";
 
-// DeckGL react component
+const supportedColumns = [
+  "Version",
+  "Axes",
+  "shape",
+  "chunks",
+  "Wells",
+  "Fields",
+  "Keywords",
+  "Thumbnail",
+];
+
+const defaultColumns = [
+  "Thumbnail"
+]
+
 export default function App() {
-  let sources = zarr_samples_json.urls;
 
-  let items = sources.map((source) => <ImageItem key={source} source={source}/>);
+  const [tableData, setTableData] = React.useState([]);
+  const [tableColumns, setTableColumns] = React.useState([]);
 
-  return (
-    <table>
-      <tbody>
-        <tr>
-          <th>Version</th>
-          <th>s3 URL</th>
-          <th>sizeX</th>
-          <th>sizeY</th>
-          <th>sizeZ</th>
-          <th>sizeC</th>
-          <th>sizeT</th>
-          <th>Axes</th>
-          <th>Wells</th>
-          <th>Fields</th>
-          <th>Keywords</th>
-          <th>Thumbnail</th>
-        </tr>
-        {items}
-      </tbody>
-    </table>
-  );
+  // check for ?csv=url
+  const params = new URLSearchParams(location.search);
+  let csvUrl = params.get("csv");
+  // columns=Version,Thumbnail etc from supportedColumns
+  let cols = params.get("columns");
+  let zarrColumns = [];
+  if (cols) {
+    zarrColumns = cols.split(",").filter(col => supportedColumns.includes(col));
+  } else {
+    zarrColumns = defaultColumns;
+  }
+  try {
+    new URL(csvUrl);
+  } catch (error) {
+    // If no valid URL provided, use default
+    csvUrl = "/zarr_samples.csv";
+  }
+
+
+  React.useEffect(() => {
+
+    // load csv and use this for the left side of the table...
+    Papa.parse(csvUrl, {
+      header: true,
+      download: true,
+      complete: function (results) {
+        setTableData(results.data);
+        setTableColumns(results.meta.fields);
+      },
+    });
+  }, []);
+
+  return <CatelogTable tableColumns={tableColumns} zarrColumns={zarrColumns} tableData={tableData} />
 }

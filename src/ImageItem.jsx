@@ -1,27 +1,25 @@
 import React from "react";
 
-import Viewer from "./Viewer";
-import OpenWith from "./OpenWith";
-import CopyButton from "./CopyButton";
-import { loadOmeroMultiscales, open, getNgffAxes } from "./util";
+import Thumbnail from "./Thumbnail";
+import { open, getNgffAxes } from "./util";
+import { openArray } from "zarr";
 
 // DeckGL react component
-export default function ImageItem({ source }) {
-  let config = { source };
-
-  const [layers, setLayers] = React.useState([]);
+export default function ImageItem({ source, zarr_columns }) {
+  if (source.endsWith("/")) {
+    source = source.slice(0, -1);
+  }
 
   const [imgInfo, setImageInfo] = React.useState({});
 
   React.useEffect(() => {
     const fn = async function () {
-      let node = await open(config.source);
+      let node = await open(source);
       let attrs = await node.attrs.asObject();
-      console.log("attrs", attrs);
 
       let keywords = [];
-      let wells;
-      let fields;
+      let wells = "";
+      let fields = "";
 
       // Check if we have a plate or bioformats2raw.layout...
       let redirectSource;
@@ -29,51 +27,52 @@ export default function ImageItem({ source }) {
         fields = attrs.plate.field_count;
         wells = attrs.plate.wells.length;
         let wellPath = source + "/" + attrs.plate.wells[0].path;
-        let wellJson = await fetch(wellPath + "/.zattrs").then(rsp => rsp.json());
+        let wellJson = await fetch(wellPath + "/.zattrs").then((rsp) =>
+          rsp.json()
+        );
         redirectSource = wellPath + "/" + wellJson.well.images[0].path;
-      } else if (attrs['bioformats2raw.layout']) {
+        keywords.push("plate");
+      } else if (attrs["bioformats2raw.layout"]) {
         // Use the first image at /0
         redirectSource = source + "/0";
       }
       if (redirectSource) {
         // reload with new source
-        config = {source: redirectSource}
-        node = await open(config.source);
+        source = redirectSource;
+        node = await open(source);
         attrs = await node.attrs.asObject();
         keywords.push("bioformats2raw.layout");
       }
 
+      // If we are showing Keywords, check for labels under image...
+      if (zarr_columns.includes("Keywords")) {
+        try {
+          let labelsJson = await fetch(source + "/labels/.zattrs").then((rsp) =>
+            rsp.json()
+          );
+          keywords.push(`labels (${labelsJson.labels.join(", ")})`);
+        } catch (err) {}
+      }
+
       const axes = getNgffAxes(attrs.multiscales);
 
-      let layerData = await loadOmeroMultiscales(config, node, attrs);
+      // load first dataset (highest resolution image) to get shape, chunks
+      let path = attrs.multiscales[0].datasets[0].path;
+      const store = await openArray({ store: source + "/" + path, mode: "r" });
+      let shape = store.meta.shape;
+      let chunks = store.meta.chunks;
 
-      let shape = layerData.loader[0]._data.meta.shape;
-
-      let selections = [];
-      layerData.channelsVisible.forEach((visible, chIndex) => {
-        if (visible) {
-          selections.push(
-            axes.map((axis, dim) => {
-              if (axis.type == "time") return 0;
-              if (axis.name == "z") return parseInt(shape[dim] / 2);
-              if (axis.name == "c") return chIndex;
-              return 0;
-            })
-          );
-        }
-      });
-      const dims = {};
-      axes.forEach((axis, dim) => (dims[axis.name] = shape[dim]));
-      layerData.selections = selections;
-
-      setLayers([layerData]);
       setImageInfo({
-        dims: dims,
-        axes: axes.map((axis) => axis.name).join(""),
-        version: attrs.multiscales?.[0]?.version,
-        keywords,
-        wells,
-        fields
+        attrs,
+        Axes: axes.map((axis) => axis.name).join(""),
+        Version: attrs.multiscales?.[0]?.version,
+        Keywords: keywords.join(", "),
+        Wells: wells,
+        shape: "(" + shape.join(", ") + ")",
+        chunks: "(" + chunks.join(", ") + ")",
+        Fields: fields,
+        // use this source for <Thumbnail> to handle plate -> Image update
+        source,
       });
     };
 
@@ -83,40 +82,35 @@ export default function ImageItem({ source }) {
   let wrapperStyle = {
     width: 150,
     height: 100,
-    position: "relative",
   };
 
-  let sizes = ["x", "y", "z", "c", "t"].map((dim) => (
-    <td key={dim}>{imgInfo?.dims?.[dim]}</td>
-  ));
-
-  let link_style = {
-    maxWidth: 150,
-    display: "block",
-    textOverflow: "ellipsis",
-    direction: "rtl",
-    whiteSpace: "nowrap",
-    overflow: "hidden"
+  function renderColumn(col_name) {
+    if (col_name == "Thumbnail") {
+      return (
+        <div style={wrapperStyle}>
+          {imgInfo.attrs && (
+            <Thumbnail
+              source={imgInfo.source}
+              axes={imgInfo.axes}
+              attrs={imgInfo.attrs}
+            />
+          )}
+        </div>
+      );
+    } else {
+      if (imgInfo[col_name] != undefined) {
+        return imgInfo[col_name];
+      } else {
+        return <span style={{"color": "#959595"}}>Loading...</span>
+      }
+    }
   }
 
   return (
-    <tr>
-      <td>{imgInfo.version}</td>
-      <td>
-        <a title={source} style={link_style} href={source}>{source}</a>
-        <CopyButton source={source} />
-        <OpenWith source={source} />
-      </td>
-      {sizes}
-      <td>{imgInfo.axes}</td>
-      <td>{imgInfo.wells}</td>
-      <td>{imgInfo.fields}</td>
-      <td>{imgInfo?.keywords?.join(", ")}</td>
-      <td>
-        <div style={wrapperStyle}>
-          <Viewer layersData={layers} />
-        </div>
-      </td>
-    </tr>
+    <React.Fragment>
+      {zarr_columns.map((col_name) => (
+        <td key={"zarr-" + col_name}>{renderColumn(col_name)}</td>
+      ))}
+    </React.Fragment>
   );
 }

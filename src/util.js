@@ -297,3 +297,62 @@ export async function loadOmeroMultiscales(config, zarrGroup, attrs) {
     name: meta.name ?? name,
   };
 }
+
+
+export function renderTo8bitArray(ndChunks, minMaxValues, colors) {
+  // Render chunks (array) into 2D 8-bit data for new ImageData(arr)
+  // ndChunks is list of zarr arrays
+
+  // assume all chunks are same shape
+  const shape = ndChunks[0].shape;
+  const height = shape[0];
+  const width = shape[1];
+
+  if (!minMaxValues) {
+    minMaxValues = ndChunks.map(getMinMaxValues);
+  }
+
+  // let rgb = [255, 255, 255];
+
+  const rgba = new Uint8ClampedArray(4 * height * width).fill(0);
+  let offset = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      for (let p = 0; p < ndChunks.length; p++) {
+        let rgb = colors[p];
+        let data = ndChunks[p].data;
+        let range = minMaxValues[p];
+        let rawValue = data[y][x];
+        let fraction = (rawValue - range[0]) / (range[1] - range[0]);
+        // for red, green, blue,
+        for (let i = 0; i < 3; i++) {
+          // rgb[i] is 0-255...
+          let v = (fraction * rgb[i]) << 0;
+          // increase pixel intensity if value is higher
+          rgba[offset * 4 + i] = Math.max(rgba[offset * 4 + i], v);
+        }
+      }
+      rgba[offset * 4 + 3] = 255; // alpha
+      offset += 1;
+    }
+  }
+  return rgba;
+}
+
+export function getMinMaxValues(chunk2d) {
+  const shape = chunk2d.shape;
+  const height = shape[0];
+  const width = shape[1];
+  const data = chunk2d.data;
+  let maxV = 0;
+  let minV = Infinity;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let rawValue = data[y][x];
+      maxV = Math.max(maxV, rawValue);
+      minV = Math.min(minV, rawValue);
+    }
+  }
+  return [minV, maxV];
+}
+
