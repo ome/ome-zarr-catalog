@@ -1,0 +1,19 @@
+{
+  "viewers": [
+    {
+      "name": "vizarr",
+      "logo": "/vizarr_logo.png",
+      "href": "https://hms-dbmi.github.io/vizarr/?source="
+    },
+    {
+      "name": "itk-vtk-viewer",
+      "logo": "/itkvtk_logo.png",
+      "href": "https://kitware.github.io/itk-vtk-viewer/app/?rotate=false&fileToLoad="
+    },
+    {
+      "name": "ome-ngff-validator",
+      "logo": "/favicon-16x16.png",
+      "href": "https://ome.github.io/ome-ngff-validator?source="
+    }
+  ]
+}
