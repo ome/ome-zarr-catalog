@@ -5,6 +5,8 @@ import Papa from "papaparse";
 
 import CatelogTable from "./CatelogTable";
 
+const zarr_samples_csv = "https://raw.githubusercontent.com/ome/ome-zarr-catalog/main/public/zarr_samples.csv";
+
 const supportedColumns = [
   "Version",
   "Axes",
@@ -40,7 +42,7 @@ export default function App() {
     new URL(csvUrl);
   } catch (error) {
     // If no valid URL provided, use default
-    csvUrl = "/zarr_samples.csv";
+    csvUrl = zarr_samples_csv;
   }
 
 
