@@ -10,12 +10,14 @@ import {
   getDefaultColors,
 } from "./util";
 
+const MAX_LENGTH = 100;
+
 export default function Thumbnail({ source, attrs }) {
   // const [r, setChunk] = React.useState();
 
   const [canvasSize, setCanvasSize] = React.useState({
-    width: 100,
-    height: 100,
+    width: MAX_LENGTH,
+    height: MAX_LENGTH,
   });
 
   const canvas = React.useRef();
@@ -75,10 +77,15 @@ export default function Thumbnail({ source, attrs }) {
 
       let rbgData = renderTo8bitArray(ndChunks, minMaxValues, colors);
 
-      // setChunk(data);
-      let width = shape.at(-1);
-      let height = shape.at(-2);
-      setCanvasSize({ width, height });
+      const width = shape.at(-1);
+      const height = shape.at(-2);
+      let scale = width / MAX_LENGTH;
+      if (height > width) {
+        scale = height / MAX_LENGTH;
+      }
+      const cssWidth = width / scale;
+      const cssHeight = height / scale;
+      setCanvasSize({ width, height, cssWidth, cssHeight });
 
       const ctx = canvas.current.getContext("2d");
       ctx.putImageData(new ImageData(rbgData, width, height), 0, 0);
@@ -89,7 +96,7 @@ export default function Thumbnail({ source, attrs }) {
 
   return (
       <canvas
-        style={{ maxWidth: 100, maxHeight: 100, backgroundColor: 'lightgrey' }}
+        style={{ width: canvasSize.cssWidth, height: canvasSize.cssHeight, maxWidth: 100, maxHeight: 100, backgroundColor: 'lightgrey' }}
         ref={canvas}
         height={canvasSize.height}
         width={canvasSize.width}
