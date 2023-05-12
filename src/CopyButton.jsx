@@ -1,5 +1,7 @@
 import React from "react";
 
+import copy_icon from "/copy_icon.png";
+
 export default function CopyButton({ source }) {
 
   let [shaking, setShaking] = React.useState(false);
@@ -47,7 +49,7 @@ export default function CopyButton({ source }) {
   
   return (
     <button title="Copy" style={buttonStyle} onClick={copyTextToClipboard}>
-      <img src="/copy_icon.png" />
+      <img src={copy_icon} />
     </button>
   );
 }
